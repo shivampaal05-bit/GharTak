@@ -1,0 +1,59 @@
+/* GharTak Design Tokens & Variables (v1.0 Specification) */
+:root {
+  --bg-color: #F6F7FB;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #EEF2F6;
+  --bg-overlay: rgba(20, 33, 61, 0.4);
+
+  --ink-primary: #14213D;
+  --ink-secondary: #4A5568;
+  --ink-muted: #718096;
+  --ink-inverse: #FFFFFF;
+
+  --primary-teal: #0F766E;
+  --primary-teal-hover: #115E59;
+  --primary-teal-light: #CCFBF1;
+  --primary-teal-border: #99F6E4;
+
+  --danger-red: #B71C1C;
+  --danger-red-hover: #991B1B;
+  --danger-red-light: #FEE2E2;
+  --danger-red-pulse: rgba(183, 28, 28, 0.25);
+
+  --success-green: #15803D;
+  --success-green-light: #DCFCE7;
+  --warning-amber: #B45309;
+  --warning-amber-light: #FEF3C7;
+
+  --card-border: #E1E5EC;
+  --border-focus: #0F766E;
+
+  --radius-sm: 8px;
+  --radius-btn: 12px;
+  --radius-card: 16px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-sos: 0 10px 25px -5px rgba(183, 28, 28, 0.4), 0 8px 10px -6px rgba(183, 28, 28, 0.3);
+
+  --font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --touch-target-min: 44px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: #0b1120;
+  color: var(--ink-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
