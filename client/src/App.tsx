@@ -75,8 +75,22 @@ export const App: React.FC = () => {
     }
     return 'APP_SIMULATOR';
   });
-  const [currentScreen, setCurrentScreen] = useState<ScreenId>('S3_HOME');
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  // Check if developer mode is enabled via secret URL query (?dev=true) or local dev
+  const isDevMode = (() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('dev') === 'true' || params.get('dev') === '1') {
+        return true;
+      }
+    }
+    return import.meta.env.DEV;
+  })();
+
+  // Normal link: starts directly at S1 (Login). Secret link (?dev=true): starts at S3 with screen switcher
+  const [currentScreen, setCurrentScreen] = useState<ScreenId>(() => {
+    return isDevMode ? 'S3_HOME' : 'S1_LOGIN';
+  });
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(isDevMode);
 
   // Network Simulation (Online / Offline for Fallback Chain)
   const [isOnline, setIsOnline] = useState(true);
@@ -330,8 +344,8 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* SIDEBAR: Developer / Tester Controls & Scenario Simulator (DEV ONLY) */}
-      {import.meta.env.DEV && (
+      {/* SIDEBAR: Developer / Tester Controls & Scenario Simulator (Secret ?dev=true Link) */}
+      {isDevMode && (
         <aside className="simulator-sidebar">
         {/* Brand */}
         <div className="brand-badge">
@@ -339,8 +353,11 @@ export const App: React.FC = () => {
             <Shield size={24} />
           </div>
           <div>
-            <div className="brand-title">GharTak</div>
-            <div className="brand-tagline">Safety-First Android & Web Platform</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="brand-title">GharTak</div>
+              <span style={{ fontSize: '10px', background: '#0F766E', color: '#FFFFFF', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>DEV</span>
+            </div>
+            <div className="brand-tagline">Secret Panel (?dev=true)</div>
           </div>
         </div>
 
