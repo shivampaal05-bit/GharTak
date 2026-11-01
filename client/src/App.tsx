@@ -66,7 +66,15 @@ const SIMULATED_POINTS = [
 
 export const App: React.FC = () => {
   // Navigation & View Mode
-  const [activeTab, setActiveTab] = useState<'APP_SIMULATOR' | 'PUBLIC_WEB_VIEW' | 'MARKETING' | 'PRIVACY'>('APP_SIMULATOR');
+  const [activeTab, setActiveTab] = useState<'APP_SIMULATOR' | 'PUBLIC_WEB_VIEW' | 'MARKETING' | 'PRIVACY'>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/v/') || path.includes('/v/')) return 'PUBLIC_WEB_VIEW';
+      if (path === '/privacy') return 'PRIVACY';
+      if (path === '/marketing') return 'MARKETING';
+    }
+    return 'APP_SIMULATOR';
+  });
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('S3_HOME');
   const [isLoggedIn, setIsLoggedIn] = useState(true);
 
