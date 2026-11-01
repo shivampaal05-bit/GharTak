@@ -5,7 +5,7 @@ export const config = {
   port: parseInt(process.env.PORT || '4000', 10),
   databaseUrl: process.env.DATABASE_URL || '',
   jwtSecret: process.env.JWT_SECRET || 'ghartak-super-secret-jwt-key-2026',
-  jwtExpiresIn: '15m',
+  jwtExpiresIn: '15m' as const,
   refreshExpiresInDays: 30,
   googleClientId: process.env.GOOGLE_CLIENT_ID || 'test-google-client-id',
   googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
