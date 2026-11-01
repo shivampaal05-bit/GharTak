@@ -322,8 +322,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* SIDEBAR: Developer / Tester Controls & Scenario Simulator */}
-      <aside className="simulator-sidebar">
+      {/* SIDEBAR: Developer / Tester Controls & Scenario Simulator (DEV ONLY) */}
+      {import.meta.env.DEV && (
+        <aside className="simulator-sidebar">
         {/* Brand */}
         <div className="brand-badge">
           <div className="brand-icon">
@@ -495,6 +496,7 @@ export const App: React.FC = () => {
           </button>
         </div>
       </aside>
+      )}
 
       {/* MAIN STAGE */}
       <main className="simulator-stage">
