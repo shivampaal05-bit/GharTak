@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import {
   Smartphone,
   Globe,
@@ -44,6 +43,18 @@ import { S10_Settings } from './screens/S10_Settings';
 import { WebLiveView } from './pages/WebLiveView';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { MarketingPage } from './pages/MarketingPage';
+
+// Browser-safe UUID v4 generator
+const uuidv4 = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 // Simulated Route Points (Lucknow MG Road coordinates)
 const SIMULATED_POINTS = [
