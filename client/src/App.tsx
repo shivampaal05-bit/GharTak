@@ -76,15 +76,7 @@ export const App: React.FC = () => {
     return 'APP_SIMULATOR';
   });
   // Check if developer mode is enabled via secret URL query (?dev=true) or local dev
-  const isDevMode = (() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('dev') === 'true' || params.get('dev') === '1') {
-        return true;
-      }
-    }
-    return import.meta.env.DEV;
-  })();
+  const isDevMode = import.meta.env.DEV || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('dev') === 'true');
 
   // Normal link: starts directly at S1 (Login). Secret link (?dev=true): starts at S3 with screen switcher
   const [currentScreen, setCurrentScreen] = useState<ScreenId>(() => {
@@ -342,6 +334,322 @@ export const App: React.FC = () => {
     }
   };
 
+  // Reusable Screen Router for both Production & Dev Simulator
+  const renderCurrentScreen = () => {
+    switch (currentScreen) {
+      case 'S1_LOGIN':
+        return (
+          <S1_Login
+            onLogin={(name) => {
+              setIsLoggedIn(true);
+              setUser({ ...user, name: name || 'Priya Sharma' });
+              setCurrentScreen('S2_PROFILE');
+            }}
+            onOpenPrivacy={() => setActiveTab('PRIVACY')}
+          />
+        );
+
+      case 'S2_PROFILE':
+        return (
+          <S2_Profile
+            initialName={user.name}
+            initialPhone={user.phone_e164 || '+919876543210'}
+            onConfirm={(name, phone) => {
+              setUser({ ...user, name, phone_e164: phone });
+              showToast('Profile saved successfully!');
+              setCurrentScreen('S3_HOME');
+            }}
+          />
+        );
+
+      case 'S3_HOME':
+        return (
+          <S3_Home
+            userName={user.name || 'Priya'}
+            onStartShare={handleStartShare}
+            onTriggerSOS={handleTriggerSOS}
+            onWhatsAppShare={handleWhatsAppShare}
+            onManageContacts={() => setCurrentScreen('S6_TRUSTED_CONTACTS')}
+            acceptedContactsCount={contacts.filter((c) => c.status === 'ACCEPTED').length}
+          />
+        );
+
+      case 'S4_SHARING_ACTIVE':
+        return (
+          <S4_SharingActive
+            contactNames={contacts
+              .filter((c) => c.status === 'ACCEPTED')
+              .map((c) => c.name.split(' ')[0])
+              .join(', ')}
+            initialTransport={activeShare?.transport || 'BUS'}
+            initialVehicle={activeShare?.vehicle_number || ''}
+            currentPlace={currentCoord.place}
+            lat={currentCoord.lat}
+            lng={currentCoord.lng}
+            onStopSharing={handleStopSharing}
+            onTriggerSOS={handleTriggerSOS}
+            onUpdateTrip={(t, v) => {
+              if (activeShare) {
+                setActiveShare({ ...activeShare, transport: t, vehicle_number: v || null });
+                showToast('Transport mode updated.');
+              }
+            }}
+          />
+        );
+
+      case 'S5_SOS_COUNTDOWN':
+        return (
+          <S5_SOSCountdown
+            transport={activeShare?.transport || 'BUS'}
+            vehicleNumber={activeShare?.vehicle_number || undefined}
+            placeLabel={currentCoord.place}
+            lat={currentCoord.lat}
+            lng={currentCoord.lng}
+            pressedTimeStr={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            onCancel={() => {
+              showToast('SOS alert cancelled.');
+              setCurrentScreen(activeShare?.status === 'ACTIVE' ? 'S4_SHARING_ACTIVE' : 'S3_HOME');
+            }}
+            onCountdownComplete={handleSOSComplete}
+          />
+        );
+
+      case 'S5B_SOS_STATUS':
+        return activeSOS ? (
+          <S5b_SOSStatus
+            sos={activeSOS}
+            onResolve={handleResolveSOS}
+            onSimulateContactAck={handleContactAck}
+          />
+        ) : null;
+
+      case 'S6_TRUSTED_CONTACTS':
+        return (
+          <S6_TrustedContacts
+            contacts={contacts}
+            onOpenPicker={() => setCurrentScreen('S7_CONTACT_PICKER')}
+            onRemoveContact={handleRemoveContact}
+            onBack={() => setCurrentScreen('S3_HOME')}
+          />
+        );
+
+      case 'S7_CONTACT_PICKER':
+        return (
+          <S7_ContactPicker
+            onAddContact={handleAddContact}
+            onCancel={() => setCurrentScreen('S6_TRUSTED_CONTACTS')}
+          />
+        );
+
+      case 'S8_FAMILY_VIEW':
+        return (
+          <S8_FamilyView
+            personName={user.name}
+            phone={user.phone_e164 || '+919876543210'}
+            transport={activeShare?.transport || 'BUS'}
+            vehicleNumber={activeShare?.vehicle_number || 'UP32 AB 1234'}
+            placeLabel={currentCoord.place}
+            lat={currentCoord.lat}
+            lng={currentCoord.lng}
+            minutesAgo={0}
+            onCall={() => alert(`Calling ${user.name}...`)}
+            onMessage={() => alert(`Messaging ${user.name}...`)}
+            onBack={() => setCurrentScreen('S3_HOME')}
+          />
+        );
+
+      case 'S9_SOS_RECEIVER':
+        return (
+          <S9_SOSAlertReceiver
+            userName={user.name}
+            userPhone={user.phone_e164 || '+919876543210'}
+            sos={
+              activeSOS || {
+                id: 'demo_sos',
+                pressed_at: new Date().toISOString(),
+                transport: 'BUS',
+                vehicle_number: 'UP32 AB 1234',
+                status: 'ACTIVE',
+                delivery_channel: 'INTERNET',
+                lat: currentCoord.lat,
+                lng: currentCoord.lng,
+                place_label: currentCoord.place,
+                recipients: [],
+              }
+            }
+            policeStation={policeStation}
+            onCall112={() => alert('Dialing Police Emergency 112...')}
+            onCallUser={() => alert(`Calling ${user.name}...`)}
+            onAckDekhLiya={() => {
+              showToast('Emergency alert acknowledged!');
+            }}
+            isAcked={false}
+            onBack={() => setCurrentScreen('S3_HOME')}
+          />
+        );
+
+      case 'S10_SETTINGS':
+        return (
+          <S10_Settings
+            user={user}
+            onOpenPrivacy={() => setActiveTab('PRIVACY')}
+            onDeleteAccount={handleDeleteAccount}
+            onLogout={() => {
+              setIsLoggedIn(false);
+              setCurrentScreen('S1_LOGIN');
+              showToast('Logged out successfully.');
+            }}
+            onBack={() => setCurrentScreen('S3_HOME')}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // Reusable Bottom In-App Android Navigation
+  const renderBottomNav = () => {
+    if (currentScreen === 'S5_SOS_COUNTDOWN' || currentScreen === 'S1_LOGIN' || currentScreen === 'S2_PROFILE') {
+      return null;
+    }
+    return (
+      <div className="phone-bottom-nav">
+        <button
+          className={`nav-item ${currentScreen === 'S3_HOME' ? 'active' : ''}`}
+          onClick={() => setCurrentScreen('S3_HOME')}
+        >
+          <Smartphone size={18} />
+          <span>Home</span>
+        </button>
+
+        <button
+          className={`nav-item ${currentScreen === 'S4_SHARING_ACTIVE' ? 'active' : ''}`}
+          onClick={() => {
+            if (!activeShare) {
+              handleStartShare('BUS');
+            } else {
+              setCurrentScreen('S4_SHARING_ACTIVE');
+            }
+          }}
+        >
+          <Radio size={18} />
+          <span>Sharing</span>
+        </button>
+
+        <button
+          className={`nav-item ${
+            currentScreen === 'S6_TRUSTED_CONTACTS' || currentScreen === 'S7_CONTACT_PICKER' ? 'active' : ''
+          }`}
+          onClick={() => setCurrentScreen('S6_TRUSTED_CONTACTS')}
+        >
+          <Users size={18} />
+          <span>Contacts</span>
+        </button>
+
+        <button
+          className={`nav-item ${currentScreen === 'S10_SETTINGS' ? 'active' : ''}`}
+          onClick={() => setCurrentScreen('S10_SETTINGS')}
+        >
+          <Shield size={18} />
+          <span>Settings</span>
+        </button>
+      </div>
+    );
+  };
+
+  // ----------------------------------------------------
+  // PRODUCTION VIEW (isDevMode === FALSE)
+  // Full width website on laptop/mobile:
+  // - w-full min-h-screen bg-[#f8f7f5] max-w-6xl mx-auto px-4
+  // - NO fixed w-[390px] h-[844px]
+  // - NO rounded-[40px], NO phone shadow, NO outer dark background
+  // - NO fake status bar (DELETED 9:41, notch pill, 5G, wifi icon)
+  // ----------------------------------------------------
+  if (!isDevMode) {
+    return (
+      <div
+        className="w-full min-h-screen bg-[#f8f7f5] max-w-6xl mx-auto px-4 prod-layout"
+        style={{
+          width: '100%',
+          minHeight: '100vh',
+          backgroundColor: '#f8f7f5',
+          maxWidth: '1152px',
+          margin: '0 auto',
+          padding: '0 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="toast-notification">
+            <CheckCircle size={18} color="#2DD4BF" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {/* 1. PUBLIC WEB LIVE VIEW */}
+        {activeTab === 'PUBLIC_WEB_VIEW' && (
+          <div style={{ width: '100%', height: '100%', flex: 1, overflowY: 'auto' }}>
+            <WebLiveView
+              token={activeShare?.view_token || 'demo-share-token'}
+              shareData={{
+                userName: user.name || 'Priya Sharma',
+                userPhone: user.phone_e164 || '+919876543210',
+                transport: activeShare?.transport || 'BUS',
+                vehicleNumber: activeShare?.vehicle_number || 'UP32 AB 1234',
+                placeLabel: currentCoord.place,
+                lat: currentCoord.lat,
+                lng: currentCoord.lng,
+                updatedAt: new Date().toISOString(),
+                isEnded: activeShare?.status === 'ENDED',
+                isSOSActive: activeSOS?.status === 'ACTIVE',
+              }}
+              onBackToApp={() => setActiveTab('APP_SIMULATOR')}
+            />
+          </div>
+        )}
+
+        {/* 2. MARKETING PAGE */}
+        {activeTab === 'MARKETING' && (
+          <div style={{ width: '100%', height: '100%', flex: 1, overflowY: 'auto' }}>
+            <MarketingPage
+              onLaunchApp={() => setActiveTab('APP_SIMULATOR')}
+              onOpenPrivacy={() => setActiveTab('PRIVACY')}
+            />
+          </div>
+        )}
+
+        {/* 3. PRIVACY PAGE */}
+        {activeTab === 'PRIVACY' && (
+          <div style={{ width: '100%', height: '100%', flex: 1, overflowY: 'auto' }}>
+            <PrivacyPage onBack={() => setActiveTab('APP_SIMULATOR')} />
+          </div>
+        )}
+
+        {/* 4. REAL GHARTAK APP (S1 - S10) - FULL WEBSITE, NO STATUS BAR */}
+        {activeTab === 'APP_SIMULATOR' && (
+          <div className="prod-app-content">
+            {/* Screen Router (NO fake status bar with 9:41 or 5G) */}
+            <div className="screen-viewport prod-screen-viewport">
+              {renderCurrentScreen()}
+            </div>
+
+            {/* Bottom In-App Navigation */}
+            {renderBottomNav()}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ----------------------------------------------------
+  // DEVELOPER VIEW (isDevMode === TRUE: ?dev=true or local dev)
+  // Keeps w-[390px] h-[844px] rounded-[40px] black background centered layout,
+  // 9:41 / 5G status bar, notch pill, and left simulator panel
+  // ----------------------------------------------------
   return (
     <div className="app-container">
       {/* SIDEBAR: Developer / Tester Controls & Scenario Simulator (Secret ?dev=true Link) */}
@@ -572,11 +880,11 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* 4. ANDROID PHONE APP (S1 - S10) */}
+        {/* 4. ANDROID PHONE APP (S1 - S10) IN DEV PHONE FRAME */}
         {activeTab === 'APP_SIMULATOR' && (
-          <div className="phone-device">
-            <div className="phone-screen">
-              {/* Top Notch & Status Bar */}
+          <div className="phone-device-dev w-[390px] h-[844px] rounded-[40px]">
+            <div className="phone-screen phone-screen-dev">
+              {/* Top Notch & Status Bar (Dev Mode Only: 9:41, notch pill, 5G 100%) */}
               <div
                 className={`phone-notch-bar ${
                   currentScreen === 'S5_SOS_COUNTDOWN' || currentScreen === 'S9_SOS_RECEIVER'
@@ -595,204 +903,11 @@ export const App: React.FC = () => {
 
               {/* Viewport Screen Router */}
               <div className="screen-viewport">
-                {currentScreen === 'S1_LOGIN' && (
-                  <S1_Login
-                    onLogin={(name) => {
-                      setIsLoggedIn(true);
-                      setUser({ ...user, name: name || 'Priya Sharma' });
-                      setCurrentScreen('S2_PROFILE');
-                    }}
-                    onOpenPrivacy={() => setActiveTab('PRIVACY')}
-                  />
-                )}
-
-                {currentScreen === 'S2_PROFILE' && (
-                  <S2_Profile
-                    initialName={user.name}
-                    initialPhone={user.phone_e164 || '+919876543210'}
-                    onConfirm={(name, phone) => {
-                      setUser({ ...user, name, phone_e164: phone });
-                      showToast('Profile saved successfully!');
-                      setCurrentScreen('S3_HOME');
-                    }}
-                  />
-                )}
-
-                {currentScreen === 'S3_HOME' && (
-                  <S3_Home
-                    userName={user.name || 'Priya'}
-                    onStartShare={handleStartShare}
-                    onTriggerSOS={handleTriggerSOS}
-                    onWhatsAppShare={handleWhatsAppShare}
-                    onManageContacts={() => setCurrentScreen('S6_TRUSTED_CONTACTS')}
-                    acceptedContactsCount={contacts.filter((c) => c.status === 'ACCEPTED').length}
-                  />
-                )}
-
-                {currentScreen === 'S4_SHARING_ACTIVE' && (
-                  <S4_SharingActive
-                    contactNames={contacts
-                      .filter((c) => c.status === 'ACCEPTED')
-                      .map((c) => c.name.split(' ')[0])
-                      .join(', ')}
-                    initialTransport={activeShare?.transport || 'BUS'}
-                    initialVehicle={activeShare?.vehicle_number || ''}
-                    currentPlace={currentCoord.place}
-                    lat={currentCoord.lat}
-                    lng={currentCoord.lng}
-                    onStopSharing={handleStopSharing}
-                    onTriggerSOS={handleTriggerSOS}
-                    onUpdateTrip={(t, v) => {
-                      if (activeShare) {
-                        setActiveShare({ ...activeShare, transport: t, vehicle_number: v || null });
-                        showToast('Transport mode updated.');
-                      }
-                    }}
-                  />
-                )}
-
-                {currentScreen === 'S5_SOS_COUNTDOWN' && (
-                  <S5_SOSCountdown
-                    transport={activeShare?.transport || 'BUS'}
-                    vehicleNumber={activeShare?.vehicle_number || undefined}
-                    placeLabel={currentCoord.place}
-                    lat={currentCoord.lat}
-                    lng={currentCoord.lng}
-                    pressedTimeStr={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    onCancel={() => {
-                      showToast('SOS alert cancelled.');
-                      setCurrentScreen(activeShare?.status === 'ACTIVE' ? 'S4_SHARING_ACTIVE' : 'S3_HOME');
-                    }}
-                    onCountdownComplete={handleSOSComplete}
-                  />
-                )}
-
-                {currentScreen === 'S5B_SOS_STATUS' && activeSOS && (
-                  <S5b_SOSStatus
-                    sos={activeSOS}
-                    onResolve={handleResolveSOS}
-                    onSimulateContactAck={handleContactAck}
-                  />
-                )}
-
-                {currentScreen === 'S6_TRUSTED_CONTACTS' && (
-                  <S6_TrustedContacts
-                    contacts={contacts}
-                    onOpenPicker={() => setCurrentScreen('S7_CONTACT_PICKER')}
-                    onRemoveContact={handleRemoveContact}
-                    onBack={() => setCurrentScreen('S3_HOME')}
-                  />
-                )}
-
-                {currentScreen === 'S7_CONTACT_PICKER' && (
-                  <S7_ContactPicker
-                    onAddContact={handleAddContact}
-                    onCancel={() => setCurrentScreen('S6_TRUSTED_CONTACTS')}
-                  />
-                )}
-
-                {currentScreen === 'S8_FAMILY_VIEW' && (
-                  <S8_FamilyView
-                    personName={user.name}
-                    phone={user.phone_e164 || '+919876543210'}
-                    transport={activeShare?.transport || 'BUS'}
-                    vehicleNumber={activeShare?.vehicle_number || 'UP32 AB 1234'}
-                    placeLabel={currentCoord.place}
-                    lat={currentCoord.lat}
-                    lng={currentCoord.lng}
-                    minutesAgo={0}
-                    onCall={() => alert(`Calling ${user.name}...`)}
-                    onMessage={() => alert(`Messaging ${user.name}...`)}
-                    onBack={() => setCurrentScreen('S3_HOME')}
-                  />
-                )}
-
-                {currentScreen === 'S9_SOS_RECEIVER' && (
-                  <S9_SOSAlertReceiver
-                    userName={user.name}
-                    userPhone={user.phone_e164 || '+919876543210'}
-                    sos={
-                      activeSOS || {
-                        id: 'demo_sos',
-                        pressed_at: new Date().toISOString(),
-                        transport: 'BUS',
-                        vehicle_number: 'UP32 AB 1234',
-                        status: 'ACTIVE',
-                        delivery_channel: 'INTERNET',
-                        lat: currentCoord.lat,
-                        lng: currentCoord.lng,
-                        place_label: currentCoord.place,
-                        recipients: [],
-                      }
-                    }
-                    policeStation={policeStation}
-                    onCall112={() => alert('Dialing Police Emergency 112...')}
-                    onCallUser={() => alert(`Calling ${user.name}...`)}
-                    onAckDekhLiya={() => {
-                      showToast('Emergency alert acknowledged!');
-                    }}
-                    isAcked={false}
-                    onBack={() => setCurrentScreen('S3_HOME')}
-                  />
-                )}
-
-                {currentScreen === 'S10_SETTINGS' && (
-                  <S10_Settings
-                    user={user}
-                    onOpenPrivacy={() => setActiveTab('PRIVACY')}
-                    onDeleteAccount={handleDeleteAccount}
-                    onLogout={() => {
-                      setIsLoggedIn(false);
-                      setCurrentScreen('S1_LOGIN');
-                      showToast('Logged out successfully.');
-                    }}
-                    onBack={() => setCurrentScreen('S3_HOME')}
-                  />
-                )}
+                {renderCurrentScreen()}
               </div>
 
-              {/* Bottom In-App Android Navigation (When not in full SOS countdown) */}
-              {currentScreen !== 'S5_SOS_COUNTDOWN' && (
-                <div className="phone-bottom-nav">
-                  <button
-                    className={`nav-item ${currentScreen === 'S3_HOME' ? 'active' : ''}`}
-                    onClick={() => setCurrentScreen('S3_HOME')}
-                  >
-                    <Smartphone size={18} />
-                    <span>Home</span>
-                  </button>
-
-                  <button
-                    className={`nav-item ${currentScreen === 'S4_SHARING_ACTIVE' ? 'active' : ''}`}
-                    onClick={() => {
-                      if (!activeShare) {
-                        handleStartShare('BUS');
-                      } else {
-                        setCurrentScreen('S4_SHARING_ACTIVE');
-                      }
-                    }}
-                  >
-                    <Radio size={18} />
-                    <span>Sharing</span>
-                  </button>
-
-                  <button
-                    className={`nav-item ${currentScreen === 'S6_TRUSTED_CONTACTS' || currentScreen === 'S7_CONTACT_PICKER' ? 'active' : ''}`}
-                    onClick={() => setCurrentScreen('S6_TRUSTED_CONTACTS')}
-                  >
-                    <Users size={18} />
-                    <span>Contacts</span>
-                  </button>
-
-                  <button
-                    className={`nav-item ${currentScreen === 'S10_SETTINGS' ? 'active' : ''}`}
-                    onClick={() => setCurrentScreen('S10_SETTINGS')}
-                  >
-                    <Shield size={18} />
-                    <span>Settings</span>
-                  </button>
-                </div>
-              )}
+              {/* Bottom In-App Android Navigation */}
+              {renderBottomNav()}
             </div>
           </div>
         )}

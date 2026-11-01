@@ -133,7 +133,142 @@
   overflow-x: hidden;
 }
 
-/* Responsive App Container - No fixed 390px */
+/* Tailwind-like utilities for responsive layout */
+.w-full { width: 100%; }
+.min-h-screen { min-height: 100vh; min-height: 100dvh; }
+.bg-\[\#f8f7f5\] { background-color: #f8f7f5; }
+.max-w-6xl { max-width: 72rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.w-\[390px\] { width: 390px; }
+.h-\[844px\] { height: 844px; }
+.rounded-\[40px\] { border-radius: 40px; }
+
+/* DEV MODE PHONE FRAME (w-[390px] h-[844px] rounded-[40px] black background centered layout) */
+.phone-device-dev {
+  width: 390px;
+  height: 844px;
+  background: #000000;
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 2px rgba(255, 255, 255, 0.15), inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.phone-device-dev .phone-screen {
+  flex: 1;
+  background-color: var(--bg-color);
+  color: var(--ink-primary);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  height: 100%;
+}
+
+.phone-device-dev .notch-pill {
+  width: 100px;
+  height: 24px;
+  background: #000000;
+  border-radius: 16px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 8px;
+  z-index: 60;
+  display: block;
+}
+
+/* PRODUCTION FULL WEBSITE MODE (No fixed 390px, no status bar, no outer dark bg) */
+.prod-layout {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #f8f7f5;
+  max-width: 72rem; /* 1152px / max-w-6xl */
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.prod-app-content {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border-radius: 16px;
+  margin: 16px 0 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+  min-height: calc(100vh - 40px);
+}
+
+@media (max-width: 640px) {
+  .prod-layout {
+    padding: 0;
+  }
+  .prod-app-content {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    min-height: 100vh;
+  }
+}
+
+.prod-screen-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #FFFFFF;
+}
+
+@media (min-width: 768px) {
+  .prod-screen-viewport > div {
+    max-width: 860px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .prod-app-content .app-header {
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .prod-app-content .card {
+    max-width: 860px;
+    margin: 14px auto;
+    width: 100%;
+  }
+  .prod-app-content .privacy-note {
+    max-width: 860px;
+    margin: 10px auto;
+  }
+  .prod-app-content .sos-bottom-container {
+    max-width: 860px;
+    margin: 14px auto;
+    width: 100%;
+  }
+  .prod-app-content .phone-bottom-nav {
+    max-width: 860px;
+    margin: 0 auto;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+/* Fallback phone-device styles */
 .phone-device {
   width: 100%;
   max-width: 100%;
@@ -145,31 +280,6 @@
   background: transparent;
   padding: 0;
   margin: 0;
-  box-shadow: none;
-  border: none;
-  border-radius: 0;
-  transition: all 0.25s ease;
-}
-
-/* On Desktop & Tablet: Centered Content with Max-Width */
-@media (min-width: 768px) {
-  .phone-device {
-    max-width: 600px;
-    margin: 28px auto;
-    min-height: min(840px, 90vh);
-    height: auto;
-    border-radius: 26px;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-    background: #FFFFFF;
-  }
-}
-
-@media (min-width: 1200px) {
-  .phone-device {
-    max-width: 640px;
-  }
 }
 
 .phone-screen {
@@ -181,15 +291,6 @@
   position: relative;
   overflow: hidden;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-}
-
-@media (min-width: 768px) {
-  .phone-screen {
-    border-radius: 26px;
-    min-height: 600px;
-  }
 }
 
 /* Phone Notch & Header */
@@ -265,19 +366,27 @@
   margin-bottom: 12px;
 }
 
-/* Transport Chips */
+/* Transport Chips: 3 columns on desktop, 2 columns on mobile */
 .chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 640px) {
+  .chips-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
 }
 
 .chip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 14px;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
   border-radius: var(--radius-btn);
   border: 1px solid var(--card-border);
   background: var(--bg-subtle);
@@ -287,6 +396,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   min-height: var(--touch-target-min);
+  width: 100%;
 }
 
 .chip:hover {

@@ -84,7 +84,7 @@ export const S3_Home: React.FC<S3HomeProps> = ({
       <div className="card" style={{ marginTop: '8px' }}>
         <div className="card-title">How are you travelling?</div>
 
-        <div className="chips-container">
+        <div className="chips-container grid grid-cols-2 md:grid-cols-3 gap-2.5 md:gap-3">
           <button
             className={`chip ${transport === 'BUS' ? 'selected' : ''}`}
             onClick={() => handleSelectTransport('BUS')}
